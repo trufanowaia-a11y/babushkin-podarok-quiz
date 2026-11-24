@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Бабушкин подарок — интерактивная викторина</title>
+<style>
+:root{--ink:#283445;--muted:#667085;--paper:#fffdf8;--gold:#d6a84f;--green:#238653;--red:#c74646;--line:#e8dfd0;--blue:#426b91}
+*{box-sizing:border-box}body{margin:0;background:#f1eee8;color:var(--ink);font:16px/1.55 Arial,sans-serif}
+.wrap{max-width:900px;margin:0 auto;padding:24px 16px 50px}
+header{background:linear-gradient(135deg,#654c38,#a67c52);color:white;border-radius:22px;padding:30px 28px;margin-bottom:18px;box-shadow:0 8px 24px #24344720}
+.eyebrow{font-size:13px;letter-spacing:1.5px;text-transform:uppercase;opacity:.85}
+h1{font-family:Georgia,serif;font-size:clamp(28px,5vw,42px);margin:8px 0}
+header p{margin:8px 0 0;opacity:.96}
+.stats{display:flex;gap:12px;flex-wrap:wrap;margin:16px 0}
+.stat{background:white;border:1px solid var(--line);border-radius:14px;padding:12px 16px;flex:1;min-width:130px}
+.stat b{display:block;font-size:23px;color:#654c38}
+.progress{height:9px;background:#e5e0d6;border-radius:20px;overflow:hidden;margin:12px 0 22px}.progress span{display:block;height:100%;width:0;background:var(--gold);transition:width .25s}
+.section{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:22px;margin:16px 0;box-shadow:0 3px 12px #342b1b08}
+.section h2{font:bold 23px Georgia,serif;margin:0 0 6px}.sub{color:var(--muted);font-size:14px;margin:0 0 18px}
+.q{padding:16px 0;border-top:1px solid var(--line)}.q:first-of-type{border-top:0}
+.qtitle{font-weight:700;margin-bottom:10px}.options{display:grid;gap:8px}
+.opt{width:100%;text-align:left;border:1.5px solid #d9dfe5;border-radius:11px;background:white;padding:11px 13px;color:var(--ink);font:inherit;cursor:pointer;transition:.15s}
+.opt:hover:not(:disabled){border-color:var(--blue);background:#f5f9fc}.opt:disabled{cursor:default;opacity:1}
+.opt.correct{border-color:var(--green);background:#e8f6ee;color:#145b36;font-weight:700}.opt.wrong{border-color:var(--red);background:#fff0ef;color:#8e2929}
+.feedback{font-size:14px;margin:9px 0 0;padding:9px 11px;border-radius:9px;background:#f3f4f6;color:#4b5563}
+.feedback.good{background:#e8f6ee;color:#145b36}.feedback.bad{background:#fff0ef;color:#8e2929}
+.tf{display:flex;gap:8px;flex-wrap:wrap}.tf button{flex:1;min-width:120px}
+.sequence-list{display:grid;gap:10px}.seqrow{display:grid;grid-template-columns:74px 1fr;gap:12px;align-items:center}
+.seqselect{width:100%;min-width:0;padding:10px 6px;border:1.5px solid #d9dfe5;border-radius:10px;background:white;font:inherit;text-align:center}
+.seqselect:focus{outline:2px solid #9bb8d0}
+button.primary{background:#654c38;color:white;border:0;border-radius:11px;padding:12px 18px;font-weight:700;cursor:pointer;margin-top:14px}
+button.primary:hover{background:#4d392a}button:disabled{opacity:.65;cursor:default}
+.note{color:var(--muted);font-size:14px}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px}
+.card{background:#f8f3e9;border:1px solid #e5d9c4;border-radius:12px;padding:13px;text-align:center}
+.card .emoji{font-size:30px;display:block;margin-bottom:6px}
+.result{background:#fff8e8;border:1px solid #ead7a9;border-radius:15px;padding:18px;margin-top:18px}
+.result h3{margin:0 0 8px;font:bold 22px Georgia,serif}footer{text-align:center;color:var(--muted);font-size:13px;margin-top:25px}
+@media(max-width:600px){.section{padding:16px}.seqrow{grid-template-columns:62px 1fr}header{padding:24px 20px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+ <div class="eyebrow">Литературная викторина · 7–9 лет</div>
+ <h1>🎁 Бабушкин подарок</h1>
+ <p>По рассказу Михаила Зощенко</p>
+ <p>Вспомни историю Миньки и Лёли, проверь внимательность и подумай о настоящей доброте.</p>
+</header>
+<div class="stats">
+ <div class="stat"><span>Текущий результат</span><b id="score">0</b></div>
+ <div class="stat"><span>Максимум</span><b>33 балла</b></div>
+ <div class="stat"><span>Отвечено</span><b id="answered">0 / 30</b></div>
+</div>
+<div class="progress"><span id="bar"></span></div>
+<section class="section" id="facts">
+<h2>Часть 1. Вспоминаем рассказ</h2><p class="sub">Выбери один ответ. Проверка и объяснение появятся сразу после выбора.</p>
+<div id="factQuestions"></div></section>
+<section class="section" id="truefalse">
+<h2>Часть 2. Верно или неверно?</h2><p class="sub">Прочитай утверждение и выбери ответ.</p><div id="tfQuestions"></div></section>
+<section class="section" id="sequence">
+<h2>Часть 3. Восстанови последовательность</h2><p class="sub">Поставь события по порядку. Выбери номер слева от каждого события, затем нажми «Проверить порядок».</p>
+<div id="sequenceRows" class="sequence-list"></div><button class="primary" id="checkSequence">Проверить порядок</button><div id="sequenceFeedback" aria-live="polite"></div>
+</section>
+<section class="section" id="motives">
+<h2>Часть 4. Подумай о героях</h2><p class="sub">Попробуй понять, почему герои так поступали и что они чувствовали.</p><div id="motiveQuestions"></div>
+</section>
+<section class="section" id="retell">
+<h2>Часть 5. Перескажи историю</h2><p class="sub">Расскажи историю по опорным подсказкам. Устный пересказ оценивает логопед, баллы автоматически не начисляются.</p>
+<div class="cards">
+<div class="card"><span class="emoji">👵</span><b>Приезд бабушки</b><br><span class="note">Корзинка пирожных, подарки</span></div>
+<div class="card"><span class="emoji">🪙</span><b>Подарок Миньке</b><br><span class="note">Десять новых монет</span></div>
+<div class="card"><span class="emoji">🌳</span><b>Ссора в саду</b><br><span class="note">Монеты в траве и канаве</span></div>
+<div class="card"><span class="emoji">🎯</span><b>Павлик и рогатка</b><br><span class="note">Бабушка рассердилась</span></div>
+<div class="card"><span class="emoji">🤝</span><b>Два поступка Миньки</b><br><span class="note">Поделиться и не хвастаться</span></div>
+<div class="card"><span class="emoji">🍦</span><b>Последствия и урок</b><br><span class="note">Мороженое и слова папы</span></div>
+</div>
+<p class="note" style="margin-top:14px"><b>Вопросы для пересказа:</b> Как бабушка относилась к детям? Почему Лёля обиделась? Что случилось с монетами? Как папа объяснил Миньке, что такое настоящий хороший поступок? Чем закончилась история?</p>
+</section>
+<div id="finalResult" class="result" hidden><h3>Викторина завершена!</h3><p id="finalText"></p><p class="note">Максимум за закрытые задания — 33 балла. Устный пересказ оценивается отдельно.</p></div>
+<footer>Отвечай самостоятельно и внимательно вспоминай события рассказа.</footer>
+</div>
+<script>
+const facts = [
+["Как часто бабушка приезжала к детям в гости?",["Каждую неделю","Каждый месяц","Раз в год","Каждое лето"],1,"Рассказчик говорит, что бабушка приезжала каждый месяц."],
+["Что бабушка обычно приносила с собой?",["Корзинку пирожных и игрушки","Книги и фрукты","Только конфеты","Одежду и школьные принадлежности"],0,"Бабушка дарила игрушки и приносила целую корзинку пирожных."],
+["Как бабушка обращалась с выбором пирожных?",["Сначала выбирала для Лёли","Давала детям выбрать по очереди","Позволяла Миньке выбрать, а Лёле давала какое придётся","Раздавала пирожные случайным образом"],2,"Миньке она позволяла выбрать понравившееся пирожное, а Лёле давала какое придётся."],
+["Где бабушка встретила детей в этот раз?",["В доме","На улице возле магазина","На балконе","В саду на даче"],3,"Бабушка приехала на дачу и шла по саду."],
+["Что Лёля спросила у бабушки?",["Почему она приехала так поздно","Не принесла ли она кроме пирожных ещё что-нибудь","Можно ли выбрать два пирожных","Где её новые игрушки"],1,"Лёля спросила, не принесла ли бабушка сегодня ничего, кроме пирожных."],
+["Как бабушка объяснила, почему подарок получит Миня?",["Он был самым младшим","Он помог ей донести корзинку","Он лучше всех благодаря своему тактичному молчанию","Он первым поздоровался"],2,"Бабушка назвала Миню благовоспитанным мальчиком за тактичное молчание."],
+["Сколько монет бабушка положила Миньке на ладонь?",["Десять монет по десять копеек","Пять монет по двадцать копеек","Десять монет по одной копейке","Две большие монеты"],0,"Это были десять новеньких монеток по десять копеек."],
+["Куда упали монеты после того, как Лёля ударила Миньку по руке?",["На крыльцо и дорожку","В корзинку с пирожными","В дом и под стол","В траву и канаву"],3,"Монеты подпрыгнули на ладони и попадали в траву и в канаву."],
+["Кто из взрослых прибежал искать монеты?",["Только папа","Папа, мама и бабушка","Только мама и бабушка","Соседи и родители"],1,"На громкий плач Миньки сбежались папа, мама и бабушка."],
+["Где спряталась Лёля, чтобы избежать наказания?",["В сарае","За кустами","На дереве","В доме на чердаке"],2,"Лёля влезла на дерево и оттуда дразнила Миньку и бабушку."],
+["Как звали соседского мальчика, который хотел стрелять в Лёлю из рогатки?",["Павлик","Вовка","Коля","Гришка"],0,"Соседского мальчика звали Павлик."],
+["Почему Павлик рассердился на бабушку?",["Она не дала ему пирожное","Она отобрала у него монеты","Она позвала его родителей","Она не позволила ему выстрелить в Лёлю, чтобы та не упала"],3,"Бабушка не позволила стрелять в Лёлю, потому что девочка могла упасть и сломать ногу."],
+["Что папа сказал о поступке Миньки после того, как бабушка похвалила его?",["Минька должен был спрятать деньги","Минька мог поделиться монетами с сестрой","Минька должен был отдать бабушке все монеты","Минька поступил лучше всех и без замечаний"],1,"Папа сказал, что хороший мальчик поделился бы с сестрой, у которой ничего нет."],
+["Сколько монет Минька сначала подарил Лёле?",["Одну","Три","Две","Четыре"],2,"Минька предложил Лёле слезть с дерева и подарил ей две монетки."],
+["Почему папа не похвалил Миньку за то, что тот подарил сестре две монеты?",["Минька сделал это слишком поздно","Он отдал не все деньги","Он хотел получить за это игрушку","Он сразу похвастался своим добрым поступком"],3,"Минька пошёл на балкон и объявил взрослым, что он лучший мальчик на свете."]
+];
+const tf = [
+["Бабушка каждый месяц приезжала к детям с игрушками и пирожными.",true,"В рассказе сказано, что бабушка приезжала каждый месяц и приносила игрушки и корзинку пирожных."],
+["Лёля была младшей сестрой Миньки.",false,"Лёля была старшей сестрой Миньки."],
+["Бабушка разрешала Лёле самой выбирать любое пирожное.",false,"Бабушка позволяла выбирать пирожное Миньке, а Лёле давала какое придётся."],
+["Бабушка положила Миньке на ладонь десять монет по десять копеек.",true,"Именно такой подарок получила Минька."],
+["Лёля ударила Миньку по руке, и монеты упали в траву и канаву.",true,"От удара монеты подпрыгнули и рассыпались."],
+["Лёля спряталась от взрослых в сарае.",false,"Она забралась на дерево."],
+["Павлик хотел помочь бабушке достать Лёлю с дерева с помощью рогатки.",true,"Он хотел выстрелить в Лёлю, но бабушка запретила, опасаясь, что девочка упадёт."],
+["Папа считал, что Минька мог поделиться монетами с сестрой.",true,"Папа сказал, что хороший мальчик заметил бы, что у сестры ничего нет, и поделился."],
+["После замечания папы Минька отдал Лёле ещё одну монету и никому об этом не сказал.",true,"Второй раз он поделился молча, не хвастаясь перед взрослыми."],
+["Лёля купила на четыре монеты игрушку, а не мороженое.",false,"На все четыре монеты она купила мороженое, ела его два часа, а к вечеру у неё заболел живот."]
+];
+const motives = [
+["Почему Лёля сердились на Миньку из-за пирожных и подарков?",["Она считала, что брат получает несправедливо больше внимания и выбора","Она не любила пирожные","Она хотела уехать к другой бабушке","Она боялась оставаться в саду"],0,"Бабушка явно выделяла Миньку: он выбирал пирожные и получал подарки, а Лёле доставалось то, что оставалось."],
+["Почему Лёля ударила Миньку по руке?",["Хотела помочь ему удержать монеты","Ей было обидно, что подарок достался только брату","Она случайно споткнулась","Хотела проверить, крепко ли он держит деньги"],1,"Лёля была обижена и рассержена из-за несправедливого отношения бабушки."],
+["Почему папа сказал, что Минька тоже поступил нехорошо?",["Минька не поблагодарил бабушку","Минька спрятал монеты от взрослых","Он видел, что у сестры ничего нет, но сам не предложил поделиться","Он отказался искать упавшие монеты"],2,"Папа обратил внимание, что Минька мог сам поделиться с сестрой и не доводить её до злобы и зависти."],
+["Почему папа не одобрил, что Минька рассказал взрослым о подаренных Лёле монетах?",["Папа считал, что добрым поступком не нужно хвастаться ради похвалы","Папа хотел, чтобы Минька вернул монеты","Папа думал, что Лёле нельзя давать деньги","Папа не слышал, что сказал Минька"],0,"Папа объяснил: настоящий хороший поступок делают не для того, чтобы потом хвастаться."],
+["Что изменилось во втором поступке Миньки?",["Он подарил Лёле все десять монет","Он попросил бабушку похвалить его","Он поделился только после того, как его попросили взрослые","Он снова дал сестре монету, но уже ничего не сказал взрослым"],3,"Во второй раз Минька поделился молча, не ожидая похвалы."]
+];
+function balancePositions(items,pattern){return items.map((item,i)=>{const[q,opts,correct,explain]=item;const target=pattern[i%pattern.length];const remaining=opts.filter((_,k)=>k!==correct);let r=0;const reordered=[];for(let k=0;k<opts.length;k++)reordered.push(k===target?opts[correct]:remaining[r++]);return[q,reordered,target,explain]})}
+let score=0,answered=0,sequenceDone=false;const totalAnswered=30;
+function update(){document.getElementById('score').textContent=score;document.getElementById('answered').textContent=answered+' / '+totalAnswered;document.getElementById('bar').style.width=(answered/totalAnswered*100)+'%';if(answered===totalAnswered&&sequenceDone)showFinal()}
+function renderChoice(containerId,items){const root=document.getElementById(containerId);items.forEach((item,i)=>{const[question,options,correct,explain]=item;const box=document.createElement('div');box.className='q';const title=document.createElement('div');title.className='qtitle';title.textContent=(i+1)+'. '+question;box.appendChild(title);const list=document.createElement('div');list.className='options';let done=false;options.forEach((option,j)=>{const b=document.createElement('button');b.className='opt';b.textContent=String.fromCharCode(65+j)+'. '+option;b.addEventListener('click',()=>{if(done)return;done=true;answered++;[...list.children].forEach((el,k)=>{el.disabled=true;if(k===correct)el.classList.add('correct');if(k===j&&j!==correct)el.classList.add('wrong')});const good=j===correct;if(good)score++;const fb=document.createElement('div');fb.className='feedback '+(good?'good':'bad');fb.textContent=(good?'Верно! ':'Не совсем. ')+explain;box.appendChild(fb);update()});list.appendChild(b)});box.appendChild(list);root.appendChild(box)})}
+renderChoice('factQuestions',balancePositions(facts,[2,0,3,1,1,3,0,2,3,1,2,0,1,2,3]));
+const tfRoot=document.getElementById('tfQuestions');tf.forEach((item,i)=>{const[q,correct,explain]=item;const box=document.createElement('div');box.className='q';const title=document.createElement('div');title.className='qtitle';title.textContent=(i+1)+'. '+q;box.appendChild(title);const opts=document.createElement('div');opts.className='tf';[['Верно',true],['Неверно',false]].forEach(([label,val])=>{const b=document.createElement('button');b.className='opt';b.textContent=label;b.onclick=()=>{if(box.dataset.done)return;box.dataset.done='1';answered++;const good=val===correct;if(good)score++;[...opts.children].forEach((el,k)=>{el.disabled=true;const v=k===0;if(v===correct)el.classList.add('correct');if(v===val&&!good)el.classList.add('wrong')});const fb=document.createElement('div');fb.className='feedback '+(good?'good':'bad');fb.textContent=(good?'Верно! ':'Ответ неверный. ')+explain;box.appendChild(fb);update()};opts.appendChild(b)});box.appendChild(opts);tfRoot.appendChild(box)});
+renderChoice('motiveQuestions',balancePositions(motives,[0,2,1,3,0]));
+const sequence=["Бабушка приезжает на дачу с корзинкой пирожных.","Бабушка дарит Миньке десять монет, а Лёля остаётся без подарка.","Лёля ударяет Миньку по руке, и монеты рассыпаются.","Взрослые собирают монеты, а Лёля прячется на дереве.","Павлик пытается выстрелить в Лёлю из рогатки, но бабушка ему запрещает.","Папа объясняет, что Минька мог поделиться с сестрой.","Минька отдаёт Лёле две монеты, а потом хвастается этим взрослым.","После слов папы Минька молча отдаёт Лёле ещё одну монету."];
+const shuffled=[...sequence].sort(()=>Math.random()-.5);const rows=document.getElementById('sequenceRows');
+shuffled.forEach((text,i)=>{const row=document.createElement('div');row.className='seqrow';const sel=document.createElement('select');sel.className='seqselect';sel.setAttribute('aria-label','Номер события для строки '+(i+1));const blank=document.createElement('option');blank.value='';blank.textContent='★';sel.appendChild(blank);for(let k=1;k<=8;k++){const op=document.createElement('option');op.value=k;op.textContent=k;sel.appendChild(op)}sel.dataset.correct=sequence.indexOf(text)+1;const label=document.createElement('div');label.textContent=text;row.appendChild(sel);row.appendChild(label);rows.appendChild(row)});
+document.getElementById('checkSequence').onclick=()=>{if(sequenceDone)return;const sels=[...rows.querySelectorAll('select')];if(sels.some(s=>!s.value)){document.getElementById('sequenceFeedback').innerHTML='<p class="feedback bad">Заполни все восемь окошек, чтобы проверить порядок.</p>';return}sequenceDone=true;let correct=0;sels.forEach(s=>{if(Number(s.value)===Number(s.dataset.correct))correct++;s.disabled=true});const points=correct===8?3:correct>=6?2:correct>=4?1:0;score+=points;const fb=document.createElement('div');fb.className='feedback '+(points===3?'good':'bad');fb.textContent='Правильно расположено событий: '+correct+' из 8. За задание: '+points+' из 3 баллов. Правильный порядок: '+sequence.join(' → ');document.getElementById('sequenceFeedback').appendChild(fb);document.getElementById('checkSequence').disabled=true;update()};
+function showFinal(){const el=document.getElementById('finalResult');el.hidden=false;let message=score>=29?'Отличная работа! Ты очень внимательно прочитал рассказ.':score>=23?'Хороший результат! Некоторые детали стоит вспомнить ещё раз.':score>=16?'Неплохо. Перечитай рассказ и обрати внимание на поступки героев.':'Попробуй перечитать рассказ и пройти викторину ещё раз.';document.getElementById('finalText').textContent='Твой результат: '+score+' из 33 баллов. '+message}
+</script>
+</body>
+</html>
